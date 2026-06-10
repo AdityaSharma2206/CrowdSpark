@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://YOUR_BACKEND_URL/api/:match*"
+      "destination": "https://crowdspark-backend-2qei.onrender.com"
     },
     {
       "source": "/(.*)",
