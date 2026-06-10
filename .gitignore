@@ -1,0 +1,17 @@
+# Claude
+.claude/
+CLAUDE.MD
+CLAUDE.md
+
+# Setup docs
+SETUP_CHECKLIST.md
+
+# Empty folders
+info/
+
+# macOS
+.DS_Store
+
+# Environment files (root level)
+.env
+.env.local
