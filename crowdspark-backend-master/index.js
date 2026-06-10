@@ -1,20 +1,19 @@
 import express from "express";
 import cors from "cors";
-
-const app = express();
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectMongoDB from "./config/db-config.js";
 
 dotenv.config();
-
 connectMongoDB();
 
+const app = express();
+
 app.use(cors({
-  origin: 'http://localhost:5174', // Your frontend URL
-  credentials: true, // This allows cookies to be sent
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  origin: process.env.FRONTEND_URL || "http://localhost:5174",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
 
 app.use(express.json());
@@ -26,17 +25,13 @@ import paymentsRoutes from "./routes/payments-route.js";
 import donationsRoutes from "./routes/donations-route.js";
 import reportsRoutes from "./routes/reports-route.js";
 
-const port = process.env.PORT || 5050;
-
-app.use(express.json());
-app.use(cookieParser());
-
 app.use("/api/users", userRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/donations", donationsRoutes);
 app.use("/api/reports", reportsRoutes);
 
+const port = process.env.PORT || 5050;
 app.listen(port, () => {
-  console.log("Node+Express Server Is Successfull");
+  console.log(`Server running on port ${port}`);
 });
