@@ -54,14 +54,15 @@ function LoginPage() {
   const handleDemoLogin = async () => {
     try {
       setLoading(true);
-      // You can implement demo login logic here
-      form.setFieldsValue({
+      const response = await axios.post("/api/users/login", {
         email: "demo@crowdspark.com",
-        password: "demo123"
+        password: "Demo@123",
       });
-      message.info("Demo credentials loaded. Click login to continue.");
-    } catch (error) {
-      message.error("Demo login not available");
+      Cookies.set("token", response.data.token, { expires: 1 });
+      message.success("Logged in as Demo User");
+      navigate("/");
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || "Demo login failed");
     } finally {
       setLoading(false);
     }
