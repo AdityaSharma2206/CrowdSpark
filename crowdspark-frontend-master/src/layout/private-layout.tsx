@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "./header";
 import axios from "axios";
 import usersStore, { UsersStoreProps } from "../store/users-store";
-import { message, Spin } from "antd";
+import { Spin } from "antd";
 
 function PrivateLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -19,8 +19,9 @@ function PrivateLayout({ children }: { children: React.ReactNode }) {
       setCurrentUser(response.data.user);
     } catch (error: any) {
       // No valid session (the auth cookie is HttpOnly, so we can't read it
-      // directly — the server is the source of truth). Send the user to login.
-      message.error("Please log in to continue");
+      // directly — the server is the source of truth). A 401 here just means
+      // "not logged in", which is normal for a first visit, so redirect to
+      // login quietly instead of showing an error toast.
       navigate("/login");
     } finally {
       setLoading(false);

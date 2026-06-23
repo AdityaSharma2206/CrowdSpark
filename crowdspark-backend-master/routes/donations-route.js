@@ -40,9 +40,16 @@ router.post("/create", authenticationMiddleware, async (req, res) => {
     // Never trust the client about money: verify the PaymentIntent with Stripe
     // before recording anything. Confirm it actually succeeded and that the
     // amount charged matches the donation amount the client is claiming.
-    const paymentIntent = await stripe(
-      process.env.STRIPE_SECRET_KEY
-    ).paymentIntents.retrieve(paymentId);
+    // A missing/invalid paymentId makes Stripe throw — that's a client error
+    // (400), not a server fault (500), so handle it explicitly.
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe(
+        process.env.STRIPE_SECRET_KEY
+      ).paymentIntents.retrieve(paymentId);
+    } catch (stripeError) {
+      return res.status(400).json({ message: "Invalid or unverifiable payment" });
+    }
     if (paymentIntent.status !== "succeeded") {
       return res.status(402).json({ message: "Payment has not been completed" });
     }
