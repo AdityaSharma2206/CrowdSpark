@@ -2,7 +2,7 @@ import express from "express";
 import UserModel from "../models/user-model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { authenticationMiddleware } from "../middleware/index.js";
+import { authenticationMiddleware, requireAdmin, requireSelfOrAdmin } from "../middleware/index.js";
 
 const router = express.Router();
 
@@ -51,7 +51,7 @@ router.get("/current-user", authenticationMiddleware, async (req, res) => {
   }
 });
 
-router.get("/all-users", authenticationMiddleware, async (req, res) => {
+router.get("/all-users", authenticationMiddleware, requireAdmin, async (req, res) => {
   try {
     const users = await UserModel.find().select("-password").sort({ createdAt: -1 });
     return res.status(200).json({ users });
@@ -60,7 +60,7 @@ router.get("/all-users", authenticationMiddleware, async (req, res) => {
   }
 });
 
-router.put("/update/:id", authenticationMiddleware, async (req, res) => {
+router.put("/update/:id", authenticationMiddleware, requireSelfOrAdmin("id"), async (req, res) => {
   try {
     const updateData = req.body;
     if (updateData.password) {
@@ -80,7 +80,7 @@ router.put("/update/:id", authenticationMiddleware, async (req, res) => {
   }
 });
 
-router.delete("/delete/:id", authenticationMiddleware, async (req, res) => {
+router.delete("/delete/:id", authenticationMiddleware, requireAdmin, async (req, res) => {
   try {
     const user = await UserModel.findById(req.params.id);
     if (!user) {

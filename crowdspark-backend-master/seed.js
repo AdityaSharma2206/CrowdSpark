@@ -112,7 +112,11 @@ const seed = async () => {
   await CampaignModel.deleteMany({});
   console.log("Cleared existing campaigns and donations");
 
-  const createdCampaigns = await CampaignModel.insertMany(campaigns);
+  // Assign all seeded campaigns to the demo user so the "My Campaigns"
+  // (owner-scoped) view has data to show on the demo login.
+  const createdCampaigns = await CampaignModel.insertMany(
+    campaigns.map((c) => ({ ...c, owner: demoUser._id }))
+  );
   console.log(`Created ${createdCampaigns.length} campaigns`);
 
   // --- Donations (tied to demo user) ---

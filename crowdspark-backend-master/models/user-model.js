@@ -26,7 +26,18 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      // Safety net: ensure the password hash can never be serialized into a
+      // response, even when the user document is reached via `.populate()`
+      // (which bypasses any `.select("-password")` on the parent query).
+      transform: (_doc, ret) => {
+        delete ret.password;
+        return ret;
+      },
+    },
+  }
 );
 
 const UserModel = mongoose.model("users", userSchema);

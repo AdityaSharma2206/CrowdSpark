@@ -18,7 +18,7 @@ router.post("/create", authenticationMiddleware, async (req, res) => {
 
 router.get("/get-all", authenticationMiddleware, async (req, res) => {
   try {
-    const donations = await DonationModel.find().populate('campaign').populate('user').sort({ createdAt: -1 });
+    const donations = await DonationModel.find().populate('campaign').populate('user', '-password').sort({ createdAt: -1 });
      
     return res.status(200).json(donations);
   } catch (error) {
@@ -32,7 +32,7 @@ router.get(
   async (req, res) => {
     try {
       const donations = await DonationModel.find({ campaign: req.params.id })
-        .populate("user")
+        .populate("user", "-password")
         .sort({ createdAt: -1 });
       return res.status(200).json(donations);
     } catch (error) {

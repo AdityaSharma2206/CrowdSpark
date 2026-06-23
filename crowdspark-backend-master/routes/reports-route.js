@@ -1,18 +1,18 @@
-import { authenticationMiddleware } from "../middleware/index.js";
+import { authenticationMiddleware, requireAdmin, requireSelfOrAdmin } from "../middleware/index.js";
 import CampaignModel from "../models/campaign-model.js";
 import DonationModel from "../models/donation-model.js";
 import UserModel from "../models/user-model.js";
 import express from "express";
 const router = express.Router();
 
-router.get("/admin-reports", authenticationMiddleware, async (req, res) => {
+router.get("/admin-reports", authenticationMiddleware, requireAdmin, async (req, res) => {
   try {
     const [totalUsers, totalCampaigns, donations] = await Promise.all([
       UserModel.countDocuments({}),
       CampaignModel.countDocuments({}),
       DonationModel.find({})
         .populate("campaign")
-        .populate("user")
+        .populate("user", "-password")
         .sort({ createdAt: -1 }),
     ]);
 
@@ -33,7 +33,7 @@ router.get("/admin-reports", authenticationMiddleware, async (req, res) => {
   }
 });
 
-router.get("/user-reports/:id", authenticationMiddleware, async (req, res) => {
+router.get("/user-reports/:id", authenticationMiddleware, requireSelfOrAdmin("id"), async (req, res) => {
   try {
     const [donations] = await Promise.all([
       DonationModel.find({
