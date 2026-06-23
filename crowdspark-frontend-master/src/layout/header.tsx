@@ -1,6 +1,6 @@
 import { MenuProps, Dropdown, Button, message, Badge, Avatar, Space, Tooltip } from "antd";
 import { Link } from "react-router-dom";
-import Cookies from "js-cookie";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import usersStore, { UsersStoreProps } from "../store/users-store";
 import { 
@@ -21,8 +21,13 @@ function Header() {
   const { currentUser, clearUser } = usersStore() as UsersStoreProps;
   const navigate = useNavigate();
   
-  const onLogout = () => {
-    Cookies.remove("token");
+  const onLogout = async () => {
+    // The auth cookie is HttpOnly, so the server must clear it.
+    try {
+      await axios.post("/api/users/logout");
+    } catch {
+      // Ignore network errors — clear local state and redirect regardless.
+    }
     clearUser();
     message.success("Logged out successfully");
     navigate("/login");

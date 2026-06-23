@@ -15,7 +15,6 @@ import WelcomeContent from "../common/welcome-content";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text, Paragraph } = Typography;
@@ -34,15 +33,10 @@ function LoginPage() {
   const onFinish = async (values: LoginForm) => {
     try {
       setLoading(true);
-      const response = await axios.post("/api/users/login", values);
+      // The server sets an HttpOnly auth cookie on success; nothing to store
+      // client-side. "remember" is sent so the server can size the session.
+      await axios.post("/api/users/login", values);
       message.success("Welcome back! Login successful");
-      
-      // Set token with expiration based on remember me
-      const tokenOptions = values.remember 
-        ? { expires: 30 } // 30 days
-        : { expires: 1 }; // 1 day
-      
-      Cookies.set("token", response.data.token, tokenOptions);
       navigate("/");
     } catch (error: any) {
       message.error(error?.response?.data?.message || "Login failed. Please try again.");
@@ -54,11 +48,10 @@ function LoginPage() {
   const handleDemoLogin = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("/api/users/login", {
+      await axios.post("/api/users/login", {
         email: "demo@crowdspark.com",
         password: "Demo@123",
       });
-      Cookies.set("token", response.data.token, { expires: 1 });
       message.success("Logged in as Demo User");
       navigate("/");
     } catch (error: any) {

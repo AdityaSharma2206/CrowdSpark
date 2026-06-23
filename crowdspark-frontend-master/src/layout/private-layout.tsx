@@ -1,4 +1,3 @@
-import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./header";
@@ -19,17 +18,16 @@ function PrivateLayout({ children }: { children: React.ReactNode }) {
       const response = await axios.get("/api/users/current-user");
       setCurrentUser(response.data.user);
     } catch (error: any) {
-      message.error(error.response.data.message || error.message);
+      // No valid session (the auth cookie is HttpOnly, so we can't read it
+      // directly — the server is the source of truth). Send the user to login.
+      message.error("Please log in to continue");
+      navigate("/login");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!Cookies.get("token")) {
-      navigate("/login");
-    }
-
     if (!currentUser) {
       getData();
     }

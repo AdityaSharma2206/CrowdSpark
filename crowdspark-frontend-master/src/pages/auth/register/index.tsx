@@ -16,7 +16,6 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -78,14 +77,13 @@ function RegisterPage() {
         password: values.password
       });
 
-      // Then, automatically log them in
-      const loginResponse = await axios.post("/api/users/login", {
+      // Then, automatically log them in. The server sets an HttpOnly auth
+      // cookie on success; "remember" keeps the session for 30 days.
+      await axios.post("/api/users/login", {
         email: values.email,
-        password: values.password
+        password: values.password,
+        remember: true,
       });
-
-      // Set the authentication token
-      Cookies.set("token", loginResponse.data.token, { expires: 30 }); // 30 days
 
       // Show success message and redirect
       message.success("Welcome to CrowdSpark! Your account has been created and you're now logged in.");

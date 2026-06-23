@@ -31,15 +31,40 @@ router.post("/login", async (req, res) => {
     if (!passwordsMatched) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
+
+    // "Remember me" controls how long the session lasts; the JWT expiry and
+    // the cookie max-age are kept in sync.
+    const maxAgeDays = req.body.remember ? 30 : 1;
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: `${maxAgeDays}d` }
     );
-    return res.status(200).json({ token, message: "User logged in successfully" });
+
+    // The token is set as an HttpOnly cookie by the server so it is never
+    // readable by client-side JavaScript (defends against XSS token theft).
+    // It is no longer returned in the response body.
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: maxAgeDays * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({ message: "User logged in successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
+});
+
+router.post("/logout", (req, res) => {
+  // Clear the HttpOnly cookie; attributes must match those used when setting it.
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  return res.status(200).json({ message: "Logged out successfully" });
 });
 
 router.get("/current-user", authenticationMiddleware, async (req, res) => {
