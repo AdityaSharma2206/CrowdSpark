@@ -87,15 +87,18 @@ const seed = async () => {
   await UserModel.deleteMany({});
   console.log("Cleared existing users");
 
+  // Normalize the admin email to match the app's email policy (lowercase/trim),
+  // so the stored value, login lookups, and the printed credentials all agree.
+  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
   const adminHashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
   await UserModel.create({
     name: "Admin",
-    email: process.env.ADMIN_EMAIL,
+    email: adminEmail,
     password: adminHashed,
     isAdmin: true,
     isActive: true,
   });
-  console.log("Admin created:", process.env.ADMIN_EMAIL);
+  console.log("Admin created:", adminEmail);
 
   const demoHashed = await bcrypt.hash("Demo@123", 10);
   const demoUser = await UserModel.create({
@@ -133,7 +136,7 @@ const seed = async () => {
   await DonationModel.insertMany(donations);
   console.log(`Created ${donations.length} donations`);
   console.log("\nSeed complete. Login credentials:");
-  console.log(`  Admin : ${process.env.ADMIN_EMAIL} / ${process.env.ADMIN_PASSWORD}`);
+  console.log(`  Admin : ${adminEmail} / ${process.env.ADMIN_PASSWORD}`);
   console.log(`  Demo  : demo@crowdspark.com / Demo@123`);
 
   await mongoose.disconnect();

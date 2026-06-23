@@ -7,7 +7,9 @@ export const uploadFilesToFirebaseAndReturnUrls = async (files: any[]) => {
 
     const uploadedFilesRefs = await Promise.all(
       files.map((file) => {
-        const fileRef = ref(storageRef, file.name);
+        // Prefix with a unique id so two users uploading the same filename
+        // don't collide and overwrite each other's images.
+        const fileRef = ref(storageRef, `${crypto.randomUUID()}-${file.name}`);
         return uploadBytes(fileRef, file);
       })
     );

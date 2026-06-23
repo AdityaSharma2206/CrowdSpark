@@ -8,6 +8,9 @@ const router = express.Router();
 
 router.post("/register", async (req, res) => {
   try {
+    // Normalize email so "Demo@x.com" and "demo@x.com" can't become two
+    // accounts and so login lookups always match.
+    req.body.email = req.body.email?.toLowerCase().trim();
     const user = await UserModel.findOne({ email: req.body.email });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
@@ -23,13 +26,18 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const user = await UserModel.findOne({ email: req.body.email });
+    const email = req.body.email?.toLowerCase().trim();
+    const user = await UserModel.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "User does not exist" });
     }
     const passwordsMatched = await bcrypt.compare(req.body.password, user.password);
     if (!passwordsMatched) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+    // Deactivated accounts cannot log in.
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Your account has been deactivated" });
     }
 
     // "Remember me" controls how long the session lasts; the JWT expiry and

@@ -24,7 +24,7 @@ router.get("/admin-reports", authenticationMiddleware, requireAdmin, async (req,
         (acc, donation) => acc + donation.amount,
         0
       ),
-      lastFiveDonations: donations.slice(-5),
+      lastFiveDonations: donations.slice(0, 5),
     };
 
     return res.status(200).json(response);
@@ -49,7 +49,7 @@ router.get("/user-reports/:id", authenticationMiddleware, requireSelfOrAdmin("id
         (acc, donation) => acc + donation.amount,
         0
       ),
-      lastFiveDonations: donations.slice(-5),
+      lastFiveDonations: donations.slice(0, 5),
     };
 
     return res.status(200).json(response);

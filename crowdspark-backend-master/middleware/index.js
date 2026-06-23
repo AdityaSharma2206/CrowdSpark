@@ -19,6 +19,11 @@ export const authenticationMiddleware = async (req, res, next) => {
     req.user = decodedUserObject;
     next();
   } catch (error) {
+    // An invalid or expired token is a client problem (401), not a server
+    // fault (500). jwt.verify throws TokenExpiredError/JsonWebTokenError here.
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ message: "Unauthorized: invalid or expired token" });
+    }
     return res.status(500).json({
       message: "Internal server error",
     });

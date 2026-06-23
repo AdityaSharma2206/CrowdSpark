@@ -22,6 +22,11 @@ router.post("/create", authenticationMiddleware, async (req, res) => {
     if (!campaignDoc) {
       return res.status(404).json({ message: "Campaign not found" });
     }
+    if (!campaignDoc.isActive) {
+      return res
+        .status(400)
+        .json({ message: "This campaign is not accepting donations" });
+    }
 
     // Idempotency: a given PaymentIntent may only ever be recorded once, so a
     // successful payment cannot be replayed to inflate the campaign total.
