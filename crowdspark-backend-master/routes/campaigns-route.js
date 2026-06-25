@@ -36,6 +36,10 @@ router.put("/update/:id", authenticationMiddleware, async (req, res) => {
     }
     // Prevent ownership transfer via the request body.
     delete req.body.owner;
+    // collectedAmount must only ever change through the verified donation flow
+    // ($inc on a confirmed Stripe payment). Stripping it here stops an owner
+    // from faking a "fully funded" total by editing their own campaign.
+    delete req.body.collectedAmount;
     await CampaignModel.findByIdAndUpdate(req.params.id, req.body);
     return res.status(200).json({ message: "Campaign updated successfully" });
   } catch (error) {

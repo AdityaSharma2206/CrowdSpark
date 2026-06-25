@@ -8,16 +8,23 @@ const router = express.Router();
 
 router.post("/register", async (req, res) => {
   try {
+    // Whitelist the fields a client is allowed to set. Saving req.body wholesale
+    // would let a caller send `isAdmin: true` (a writable schema field) and
+    // self-promote to admin — mass-assignment privilege escalation.
+    const name = req.body.name;
     // Normalize email so "Demo@x.com" and "demo@x.com" can't become two
     // accounts and so login lookups always match.
-    req.body.email = req.body.email?.toLowerCase().trim();
-    const user = await UserModel.findOne({ email: req.body.email });
+    const email = req.body.email?.toLowerCase().trim();
+    const password = req.body.password;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email and password are required" });
+    }
+    const user = await UserModel.findOne({ email });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
     }
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    req.body.password = hashedPassword;
-    await UserModel.create(req.body);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await UserModel.create({ name, email, password: hashedPassword });
     return res.status(201).json({ message: "User created successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
