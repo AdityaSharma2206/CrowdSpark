@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { message, Progress, Spin, Card, Button, Row, Col, Statistic } from "antd";
 import { CampaignTypeProps, DonationTypeProps } from "../../../interfaces";
+import usersStore, { UsersStoreProps } from "../../../store/users-store";
 import { 
   ClockCircleOutlined, 
   UserOutlined, 
@@ -36,22 +37,12 @@ function Homepage() {
     activeBackers: 0,
     successRate: 0
   });
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { currentUser } = usersStore() as UsersStoreProps;
   const navigate = useNavigate();
-
-  // Get current user info
-  const getCurrentUser = async () => {
-    try {
-      const response = await axios.get("/api/users/get-current-user");
-      setCurrentUser(response.data);
-    } catch (error) {
-      console.error("Error fetching current user:", error);
-    }
-  };
 
   // Determine the correct route based on user role
   const getCampaignCreateRoute = () => {
-    if (currentUser?.role === 'admin') {
+    if (currentUser?.isAdmin) {
       return "/admin/campaigns/create";
     } else {
       return "/user/campaigns/create";
@@ -168,7 +159,6 @@ function Homepage() {
   };
 
   useEffect(() => {
-    getCurrentUser();
     getData();
   }, []);
 

@@ -63,7 +63,7 @@ interface ProfileFormData {
 }
 
 function ProfilePage() {
-  const { currentUser } = usersStore() as UsersStoreProps;
+  const { currentUser, setCurrentUser } = usersStore() as UsersStoreProps;
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -120,10 +120,11 @@ function ProfilePage() {
   const handleUpdateProfile = async (values: ProfileFormData) => {
     try {
       setLoading(true);
-      await axios.put(`/api/users/update-profile`, values);
+      const response = await axios.put(`/api/users/update-profile`, values);
+      // Reflect the change immediately (header, profile cards) via the store.
+      if (response.data?.user) setCurrentUser(response.data.user);
       message.success("Profile updated successfully!");
       setEditMode(false);
-      // You might want to refresh the user data here
     } catch (error: any) {
       message.error("Failed to update profile: " + error.response?.data?.message);
     } finally {

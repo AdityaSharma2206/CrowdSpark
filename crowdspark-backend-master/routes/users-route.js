@@ -91,6 +91,71 @@ router.get("/current-user", authenticationMiddleware, async (req, res) => {
   }
 });
 
+// Self-service profile edit. The user is derived from the verified token, and
+// only name/email are accepted from the body — isAdmin/isActive can never be
+// set here (that would be mass-assignment privilege escalation).
+router.put("/update-profile", authenticationMiddleware, async (req, res) => {
+  try {
+    const updateData = {};
+    if (req.body.name !== undefined) {
+      if (!req.body.name) {
+        return res.status(400).json({ message: "Name cannot be empty" });
+      }
+      updateData.name = req.body.name;
+    }
+    if (req.body.email !== undefined) {
+      const email = req.body.email?.toLowerCase().trim();
+      if (!email) {
+        return res.status(400).json({ message: "Email cannot be empty" });
+      }
+      // The email must not already belong to a different account.
+      const existing = await UserModel.findOne({ email });
+      if (existing && existing._id.toString() !== req.user.userId) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
+      updateData.email = email;
+    }
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      req.user.userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select("-password");
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json({ message: "Profile updated successfully", user: updatedUser });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Self-service password change. Requires the current password to be re-verified
+// before setting a new one, so a stolen session alone can't change the password.
+router.put("/change-password", authenticationMiddleware, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password are required" });
+    }
+    if (typeof newPassword !== "string" || newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+    const user = await UserModel.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const matched = await bcrypt.compare(oldPassword, user.password);
+    if (!matched) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    return res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 router.get("/all-users", authenticationMiddleware, requireAdmin, async (req, res) => {
   try {
     const users = await UserModel.find().select("-password").sort({ createdAt: -1 });
@@ -102,10 +167,25 @@ router.get("/all-users", authenticationMiddleware, requireAdmin, async (req, res
 
 router.put("/update/:id", authenticationMiddleware, requireSelfOrAdmin("id"), async (req, res) => {
   try {
-    const updateData = req.body;
-    if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, 10);
+    // Whitelist fields by privilege. requireSelfOrAdmin lets the resource owner
+    // OR an admin through, so without this a normal user updating their own
+    // record could send `isAdmin: true` and self-promote (mass assignment).
+    // Re-load the requester to know whether the privilege fields are allowed.
+    const requester = await UserModel.findById(req.user.userId);
+    const isAdmin = Boolean(requester && requester.isAdmin);
+
+    const updateData = {};
+    if (req.body.name !== undefined) updateData.name = req.body.name;
+    if (req.body.email !== undefined) updateData.email = req.body.email?.toLowerCase().trim();
+    if (req.body.password) {
+      updateData.password = await bcrypt.hash(req.body.password, 10);
     }
+    // Privilege/status flags are admin-only.
+    if (isAdmin) {
+      if (req.body.isAdmin !== undefined) updateData.isAdmin = req.body.isAdmin;
+      if (req.body.isActive !== undefined) updateData.isActive = req.body.isActive;
+    }
+
     const updatedUser = await UserModel.findByIdAndUpdate(
       req.params.id,
       updateData,
